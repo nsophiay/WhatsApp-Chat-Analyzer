@@ -1,4 +1,4 @@
-
+package learning;
 
 import java.awt.EventQueue;
 
@@ -108,36 +108,84 @@ public class WhatsApp {
 		CharSequence n1 = name1;
 		CharSequence n2 = name2;
 		
-		input.useDelimiter(",\\s\\d{1,2}:\\d{1,2}\\s[A-Za-z.]{4}\\s-\\s");
+		// input.useDelimiter(",\\s\\d{1,2}:\\d{1,2}\\s[A-Za-z.]{4}\\s-\\s");
+		input.useDelimiter("\\s-\\s");
 		
 		
 		int messageCount = 0, max = 0;
-		String fullDate = input.next().substring(0,10), finalDate = "";
-		String initialDay = fullDate.substring(8);
+		String fullDate = "", finalDate = "";
+		String initialDay = "";
+		String time = "";
 		int dayCount = 1;
+		int p1Initiating = 0, p2Initiating = 0;
+		int timeSubstring = 0;
+		int forFullDate = 21;
+		int currentTime = 0, lastTime = 0, currentHour = 0, lastHour = 0;
 		
 		// Extract date and message count information
+		
 		while(input.hasNextLine()){
 			String word = input.next();
-			if(word.substring(word.length()-10).substring(8).equals(initialDay)){
-				messageCount++;
-				if(Character.isDigit(word.substring(word.length()-10).charAt(0)))
-					fullDate = word.substring(word.length()-10);
-			}
-			else if(!word.substring(word.length()-10).substring(8).equals(initialDay)){
-				if(messageCount > max){
-					max = messageCount;
-					finalDate = fullDate;
+			if((word.charAt(word.length()-6) >= 48 && word.charAt(word.length()-6) <= 57)){
+			
+				time = word.substring(word.length()-11, word.length()-5);
+				
+				if(time.charAt(0) == ','){
+					timeSubstring = 13;
+					time = time.substring(2);
+					currentHour = Integer.parseInt(time.substring(0,1));
+				}else{timeSubstring = 14; time = time.trim(); currentHour = Integer.parseInt(time.substring(0,2));};
+				
+				currentTime = Integer.parseInt(time.substring(time.length()-2)); 
+				
+				System.out.println("time: " + time);
+				
+				System.out.println("word: " + word);
+				System.out.println("The substring: " + word.substring(word.length()-timeSubstring).substring(0,2));
+				if(word.substring(word.length()-timeSubstring).substring(0,2).equals(initialDay)){
+					messageCount++;
+					if(Character.isDigit(word.substring(word.length()-forFullDate).charAt(0))){
+						fullDate = word.substring(word.length()-forFullDate);
+	
+					}
 				}
-				dayCount++;
-				messageCount = 0;
-				initialDay = word.substring(word.length()-2);
+				else if(!word.substring(word.length()-timeSubstring).substring(0,2).equals(initialDay)){
+	
+					if(messageCount > max){
+						max = messageCount;
+						finalDate = fullDate;
+	
+					}
+					dayCount++;
+					messageCount = 0;
+					initialDay = word.substring(word.length()-timeSubstring).substring(0,2);
+	
+				}
+			word = word.substring(0,word.length()-forFullDate);
 			}
-			word = word.substring(0,word.length()-10);
-			if(word.contains(n1))
+			
+			
+			
+			if(word.contains(n1)){
 				p1words.add(word.substring(name1.length()+2));
-			else if(word.contains(n2))
+				if(lastTime <= 30 && ((currentTime-lastTime)>30 || ((currentTime-lastTime)<0&&(currentTime-lastTime)>-30)) && currentHour == lastHour){
+					p1Initiating++;
+				}
+				else if(lastTime > 30 && ((currentTime-lastTime)>30 || ((currentTime-lastTime)<0&&(currentTime-lastTime)>-30))&& currentHour == (lastHour+1)){
+					p1Initiating++;
+				}
+			}
+			else if(word.contains(n2)){
 				p2words.add(word.substring(name2.length()+2));
+				if(lastTime <= 30 && ((currentTime-lastTime)>30 || ((currentTime-lastTime)<0&&(currentTime-lastTime)>-30)) && currentHour == lastHour){
+					p2Initiating++;
+				}
+				else if(lastTime > 30 && ((currentTime-lastTime)>30 || ((currentTime-lastTime)<0&&(currentTime-lastTime)>-30))&& currentHour == (lastHour+1)){
+					p2Initiating++;
+				}
+			}
+			lastTime = currentTime;
+			lastHour = currentHour;
 		}
 		
 		long p1messages = p1words.size();
@@ -158,7 +206,7 @@ public class WhatsApp {
 			words = p1words.get(i).split("([,\\?]?\\s+)+");
 			sum += words.length;
 			for(int j = 0; j < words.length; j++){
-				if(!isCommonWord(words[j])){
+				if(!isCommonWord(words[j]) && !(words[j].equals(name1))){
 					if(h.findDuplicate(words[j])>=0){
 						int dupPosition = h.findDuplicate(words[j]);
 						int newKey = h.heap.get(dupPosition).getKey()+1;
@@ -186,7 +234,7 @@ public class WhatsApp {
 			words = p2words.get(i).split("([,\\?]?\\s+)+");
 			sum += words.length;
 			for(int j = 0; j < words.length; j++){
-				if(!isCommonWord(words[j]))
+				if(!isCommonWord(words[j]) && !(words[j].equals(name2)))
 					if(h2.findDuplicate(words[j])>=0){
 						int dupPosition = h2.findDuplicate(words[j]);
 						int newKey = h2.heap.get(dupPosition).getKey()+1;
@@ -225,13 +273,14 @@ public class WhatsApp {
 	
 		// Print statistics
 		tx.append("\n" + name1 + " has sent " + p1words.size() + " messages, compared to " + p2words.size() + " messages sent by " + name2 + "\n");
-		tx.append((p1messages>p2messages)?name1 + " has sent more messages than "+name2:name2+" has sent more messages than "+name1);
+		tx.append((p1messages>p2messages)?name1 + " has sent more messages than "+name2:name2+" has sent more messages than "+name1+"\n");
+		tx.append((p1Initiating>p2Initiating)?name1 + " has started a conversation more often than "+name2:name2+" has started a conversation more often than "+name1);
 		tx.append("\nThe average word count of each of " + name1 + "'s messages is: " + p1average);
 		tx.append("\nThe average word count of each of " + name2 + "'s messages is: " + p2average);
 		tx.append("\n" + name1 + " sent " + (p1words.size()/dayCount) + " messages per day.");
 		tx.append("\n" + name2 + " sent " + (p2words.size()/dayCount) + " messages per day.");
 		tx.append("\nIn total, " + ((p1words.size()+p2words.size())/dayCount) + " messages were sent per day.");
-		tx.append("\nThe most messages sent in one day was " + max + " on " + finalDate + "\n");		
+		tx.append("\nThe most messages sent in one day was " + max + " on " + finalDate.substring(0,10) + "\n");
 		
 		JLabel label = new JLabel("Most frequent words used by " + name1 + ":");
 		label.setFont(new Font("Tahoma", Font.BOLD | Font.ITALIC, 15));
@@ -279,7 +328,7 @@ public class WhatsApp {
 	
 	public static boolean isCommonWord(String a){
 		
-		String[] french = {"te", "ma", "?", "plus", "dit", "bon", "sur", "haha,", "n'est", "quand", "tout", "ont", "Oui", "cette", "as", "Ã§a", "Ã ", "n'ai", "ces", "par", "ils", "elles", "si", "dans", "oui,", "qui", "ou", "beaucoup", "me", "au", "j'ai", "c'est", "avec", "y", "ce", "sont", "on", "suis", "pour", "il", "comme", "mais", "du", "en", "est", "de", "je", "un", "une", "la", "le", "les", "des", "pas", "ne", "que", "et", "tu", "a"};
+		String[] french = {"te", "ma", "?", "plus", "dit", "bon", "sur", "haha,", "n'est", "quand", "tout", "ont", "Oui", "cette", "as", "ça", "à", "n'ai", "ces", "par", "ils", "elles", "si", "dans", "oui,", "qui", "ou", "beaucoup", "me", "au", "j'ai", "c'est", "avec", "y", "ce", "sont", "on", "suis", "pour", "il", "comme", "mais", "du", "en", "est", "de", "je", "un", "une", "la", "le", "les", "des", "pas", "ne", "que", "et", "tu", "a"};
 		String[] english = {"so","they","can","an","yes","one","?", "the", "to", "i", "I", "and", "you","is","of","that","it","in","he","for","be","at","have","not","but","we","me","this","was","my","with","about","what","it's","are","get","if","or","do"};
 
 		for(int i = 0; i < french.length; i++){
